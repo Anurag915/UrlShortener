@@ -7,6 +7,9 @@ const { connectToMongoDb } = require("./connect.js");
 const { default: mongoose } = require("mongoose");
 const path = require("path");
 const staticRoutes=require("./routes/staticRoutes.js");
+const userRouter=require("./routes/user.js");
+const {restrictToLoggedInUserOnly,checkAuth}=require("./middlewares/auth.js")
+const cookieParser=require("cookie-parser");
 
 connectToMongoDb("mongodb://127.0.0.1:27017/ShortUrl").then(() =>
   console.log("db connection successful")
@@ -16,11 +19,12 @@ app.set("views", path.resolve("./views"));
 
 app.use(express.json());
 app.use(express.urlencoded({extended:false}));
+app.use(cookieParser());   // correct usage
 
 
-app.use("/api/url", urlRouter);
-
-app.use("/",staticRoutes);
+app.use("/api/url",restrictToLoggedInUserOnly, urlRouter);
+app.use("/api/user",userRouter);
+app.use("/",checkAuth,staticRoutes);
 
 app.get("/api/:shortId", async (req, res) => {
   try {
